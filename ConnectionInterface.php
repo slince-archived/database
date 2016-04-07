@@ -17,7 +17,7 @@ interface ConnectionInterface
 
     function connect();
 
-    function rollnack();
+    function rollback();
 
     function run(Query $query);
 }

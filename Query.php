@@ -94,6 +94,11 @@ class Query
         return $this;
     }
 
+    function toSql()
+    {
+        return $this->getConnection()->compileQuery($this);
+    }
+
     function execute()
     {
         return $this->connection->run($this);

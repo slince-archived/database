@@ -21,13 +21,22 @@ class Connection implements ConnectionInterface
         if (empty($config['driver']) || ! isset(static::$supportedDrivers[$config['driver']])) {
             throw new InvalidArgumentException(sprintf('Driver "%s" is not supported', $config['driver']));
         }
-        $this->driver = $this->getDriver($config['driver'], $config);
+        $this->driver = $this->createDriver($config['driver'], $config);
     }
 
-    protected function getDriver($driver, array $config)
+    protected function createDriver($driver, array $config)
     {
         $driverClass = static::$supportedDrivers[$driver];
-        return new $driverClass($config);
+        new $driverClass($config);
+    }
+
+    /**
+     * 获取driver
+     * @return DriverInterface
+     */
+    function getDriver()
+    {
+        return $this->driver;
     }
 
     function connect()
@@ -35,11 +44,6 @@ class Connection implements ConnectionInterface
         if (! $this->driver->connect()) {
             throw new RuntimeException('Unable to connect to the database');
         }
-    }
-
-    static function getSupportedDrivers()
-    {
-         return array_keys(static::$supportedDrivers);
     }
 
     function newQuery()
@@ -70,5 +74,37 @@ class Connection implements ConnectionInterface
             ->from($table)
             ->where($conditions)
             ->execute();
+    }
+
+    function begin()
+    {
+
+    }
+
+    function commit()
+    {
+    }
+
+    function rollback()
+    {
+    }
+
+    function compileQuery(Query $query)
+    {
+        return $this->driver->compileQuery($query);
+    }
+
+    function execute($sql)
+    {
+        return $this->driver->execute($sql);
+    }
+
+    function run(Query $query)
+    {
+    }
+
+    static function getSupportedDrivers()
+    {
+        return array_keys(static::$supportedDrivers);
     }
 }
