@@ -19,6 +19,5 @@ interface ConnectionInterface
 
     function rollnack();
 
-    function run();
-
+    function run(Query $query);
 }
