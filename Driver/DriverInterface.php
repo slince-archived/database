@@ -1,11 +1,27 @@
 <?php
 namespace Slince\Database\Driver;
 
+use Slince\Database\Query;
+
 interface DriverInterface
 {
     function connect();
 
-    function execute($sql);
+    function beginTransaction();
 
-    function query();
+    function commitTransaction();
+
+    function rollbackTransaction();
+
+    /**
+     * @param $statement
+     * @return \PDOStatement
+     */
+    function prepare($statement);
+
+    function execute($statement);
+
+    function query($statement);
+
+    function compileQuery(Query $query);
 }

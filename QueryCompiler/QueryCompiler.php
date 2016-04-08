@@ -7,5 +7,11 @@ class QueryCompiler implements QueryCompilerInterface
 {
     function compile(Query $query)
     {
+
+    }
+
+    protected function createSqlForSelect()
+    {
+        
     }
 }

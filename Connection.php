@@ -27,7 +27,7 @@ class Connection implements ConnectionInterface
     protected function createDriver($driver, array $config)
     {
         $driverClass = static::$supportedDrivers[$driver];
-        new $driverClass($config);
+        return new $driverClass($config);
     }
 
     /**
@@ -78,15 +78,17 @@ class Connection implements ConnectionInterface
 
     function begin()
     {
-
+        return $this->driver->beginTransaction();
     }
 
     function commit()
     {
+        return $this->driver->commitTransaction();
     }
 
     function rollback()
     {
+        return $this->driver->rollbackTransaction();
     }
 
     function compileQuery(Query $query)
@@ -94,13 +96,21 @@ class Connection implements ConnectionInterface
         return $this->driver->compileQuery($query);
     }
 
-    function execute($sql)
+    function execute($statement)
     {
-        return $this->driver->execute($sql);
+        return $this->driver->execute($statement);
+    }
+
+    function query($statement)
+    {
+        return $this->driver->query($statement);
     }
 
     function run(Query $query)
     {
+        $statement = $this->driver->prepare($this->driver->compileQuery($query));
+        $statement->execute();
+        return $statement;
     }
 
     static function getSupportedDrivers()
