@@ -9,9 +9,9 @@ interface DriverInterface
 
     function beginTransaction();
 
-    function commitTransaction();
+    function commit();
 
-    function rollbackTransaction();
+    function rollback();
 
     /**
      * @param $statement

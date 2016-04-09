@@ -76,19 +76,19 @@ class Connection implements ConnectionInterface
             ->execute();
     }
 
-    function begin()
+    function beginTransaction()
     {
         return $this->driver->beginTransaction();
     }
 
     function commit()
     {
-        return $this->driver->commitTransaction();
+        return $this->driver->commit();
     }
 
     function rollback()
     {
-        return $this->driver->rollbackTransaction();
+        return $this->driver->rollback();
     }
 
     function compileQuery(Query $query)

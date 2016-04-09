@@ -1,6 +1,8 @@
 <?php
 namespace Slince\Database;
 
+use Slince\Database\Expression\CompositeExpression;
+
 class Query
 {
     const SELECT = 1;
@@ -46,6 +48,21 @@ class Query
     function getConnection()
     {
         return $this->connection;
+    }
+
+    function getType()
+    {
+        return $this->type;
+    }
+
+    function getSqlParts()
+    {
+        return $this->sqlParts;
+    }
+
+    function getSqlPart($name)
+    {
+        return $this->sqlParts[$name] ?: null;
     }
 
     public function insert($table)
@@ -102,10 +119,32 @@ class Query
         return $this;
     }
 
-    function where($conditions)
+    function where($expression)
     {
-        $this->sqlParts['where'][] = $conditions;
+        if (! $expression instanceof CompositeExpression) {
+            $condition = $expression;
+            if (! is_array($condition)) {
+                $condition = func_get_args();
+            }
+            $expression = new CompositeExpression(CompositeExpression::TYPE_AND, $condition);
+        }
+        $this->sqlParts['where'] = $expression;
         return $this;
+    }
+
+    function andWhere($expression)
+    {
+        $where = $this->getSqlPart('where');
+        if ($where instanceof CompositeExpression) {
+            $where->addMultiple($conditions);
+        }
+    }
+    function orWhere($conditions)
+    {
+        $where = $this->getSqlPart('where');
+        if ($where instanceof CompositeExpression) {
+            $where->addMultiple($conditions);
+        }
     }
 
     function offset($num)
@@ -119,15 +158,15 @@ class Query
         return $this;
     }
 
-    function order($field, $direction = null)
+    function order($sort, $direction = null)
     {
-        if (! is_array($field)) {
+        if (! is_array($sort)) {
             $order[] = [
-                'field' => $field,
+                'sort' => $sort,
                 'direction' => $direction
             ];
         } else {
-            $order = $field;
+            $order = $sort;
         }
         $this->sqlParts['order'] = $order;
         return $this;
