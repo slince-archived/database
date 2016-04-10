@@ -47,6 +47,23 @@ class ConnectionManager
     }
 
     /**
+     * 获取指定的配置选项
+     * @param $name
+     * @return array|null
+     */
+    function getConfig($name)
+    {
+        return isset($this->configs[$name]) ? $this->configs[$name] : null;
+    }
+    /**
+     *  获取所有的配置选项
+     * @return array
+     */
+    function getConfigs()
+    {
+        return $this->configs;
+    }
+    /**
      * 创建数据库连接
      * @param $name 配置名称
      * @return Connection

@@ -13,7 +13,7 @@ class Connection implements ConnectionInterface
     protected $driver;
 
     protected static $supportedDrivers = [
-        'mysql' => '\\Slince\\Database\\Driver\\Mysql'
+        'mysql' => '\\Slince\\Database\\Driver\\MysqlDriver'
     ];
 
     function __construct(array $config)
@@ -108,7 +108,7 @@ class Connection implements ConnectionInterface
 
     function run(Query $query)
     {
-        $statement = $this->driver->prepare($this->driver->compileQuery($query));
+        $statement = $this->driver->prepare($this->compileQuery($query));
         $statement->execute();
         return $statement;
     }

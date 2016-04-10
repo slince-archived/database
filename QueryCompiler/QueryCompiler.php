@@ -9,25 +9,23 @@ class QueryCompiler implements QueryCompilerInterface
     function compile(Query $query)
     {
         $type = $query->getType();
-
+        $statement = '';
+        switch ($type) {
+            case Query::SELECT:
+                $statement = $this->createSqlForSelect($query->getSqlParts());
+                break;
+        }
+        return $statement;
     }
 
     protected function createSqlForSelect(array $sqlParts)
     {
-        $statement = 'SELECT ' . implode(',', $sqlParts['select']) . ' From ';
-        $normalized = '';
-        foreach ($sqlParts['from'] as $from) {
-            if (empty($from['alias'])) {
-                $normalized .= $from['table'];
-            } else {
-                $normalized .= "{$from['table']} AS {$from['alias']}";
-            }
-        }
-        $statement .= $normalized;
-        $statement .= $sqlParts['where'] ? 'WHERE' . $this->processWhereParts($sqlParts['where']) : ''
-            . $sqlParts['group'] ? 'GROUP BY' . $this->processGroupParts($sqlParts['group']) : ''
-            . $sqlParts['having'] ? 'HAVING' . $this->processHavingParts() : ''
-            . $sqlParts['order'] ? ' ORDER BY ' . $this->processOrderParts($sqlParts['order']) : '';
+        $statement = 'SELECT ' . implode(',', $sqlParts['select']) . ' FROM ';
+        $statement .= $this->processTables($sqlParts['from'])
+            . ($sqlParts['where'] ? ' WHERE ' . $this->processWhereParts($sqlParts['where']) : '')
+            . ($sqlParts['group'] ? ' GROUP BY ' . $this->processGroupParts($sqlParts['group']) : '')
+            . ($sqlParts['having'] ? ' HAVING ' . $this->processHavingParts() : '')
+            . ($sqlParts['order'] ? ' ORDER BY ' . $this->processOrderParts($sqlParts['order']) : '');
         if (! empty($sqlParts['limit'])) {
             $statement = $this->modifyLimitQuery($statement, $sqlParts['limit'], $sqlParts['offset']);
         }
@@ -36,12 +34,17 @@ class QueryCompiler implements QueryCompilerInterface
 
     protected function processWhereParts($whereParts)
     {
-
+        return strval($whereParts);
     }
 
-    function processHavingParts()
+    protected function processGroupParts($groupParts)
     {
+        return implode(',', $groupParts);
+    }
 
+    protected function processHavingParts($havingParts)
+    {
+        return strval($havingParts);
     }
 
     protected function processOrderParts($orderParts)
@@ -63,5 +66,18 @@ class QueryCompiler implements QueryCompilerInterface
             $statement = " LIMIT {$offset}, {$limit}";
         }
         return $statement;
+    }
+
+    protected function processTables($tables)
+    {
+        $statements = array_map(function($table){
+            if (empty($table['alias'])) {
+                $normalized = $table['table'];
+            } else {
+                $normalized = "{$table['table']} AS {$table['alias']}";
+            }
+            return $normalized;
+        }, $tables);
+        return implode(',', $statements);
     }
 }

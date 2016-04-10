@@ -2,6 +2,7 @@
 namespace Slince\Database\Driver;
 
 use PDO;
+use Slince\Database\Query;
 use Slince\Database\QueryCompiler\QueryCompiler;
 
 abstract class Driver implements DriverInterface
@@ -13,6 +14,11 @@ abstract class Driver implements DriverInterface
      * @var PDO
      */
     protected $pdo;
+
+    /**
+     * @var QueryCompiler
+     */
+    protected $queryCompiler;
 
     function __construct(array $config)
     {
@@ -28,8 +34,6 @@ abstract class Driver implements DriverInterface
         return true;
     }
 
-    abstract protected function createDsn(array $config);
-
     function beginTransaction()
     {
         $this->connect();
@@ -39,7 +43,7 @@ abstract class Driver implements DriverInterface
         $this->pdo->beginTransaction();
     }
 
-    function commitTransaction()
+    function commit()
     {
         $this->connect();
         if (!$this->pdo->inTransaction()) {
@@ -48,7 +52,7 @@ abstract class Driver implements DriverInterface
         return $this->pdo->commit();
     }
 
-    function rollbackTransaction()
+    function rollback()
     {
         $this->connect();
         if (!$this->pdo->inTransaction()) {
@@ -79,6 +83,11 @@ abstract class Driver implements DriverInterface
 
     function getQueryCompiler()
     {
-        return new QueryCompiler();
+        if (! is_null($this->queryCompiler)) {
+            return $this->queryCompiler;
+        }
+        return $this->queryCompiler = $this->createQueryCompiler();
     }
+    abstract protected function createDsn(array $config);
+    abstract protected function createQueryCompiler();
 }

@@ -3,6 +3,8 @@ namespace Slince\Database;
 
 interface ConnectionInterface
 {
+    function connect();
+    
     function newQuery();
 
     function insert($table, $columns);
@@ -11,11 +13,9 @@ interface ConnectionInterface
 
     function delete($table, $conditions = []);
 
-    function begin();
+    function beginTransaction();
 
     function commit();
-
-    function connect();
 
     function rollback();
 
