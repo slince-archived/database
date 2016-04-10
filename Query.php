@@ -181,7 +181,9 @@ class Query
 
     function andHaving($expressions)
     {
-        $expressions = is_array($expressions) ? $expressions : func_get_args();
+        if (!is_array($expressions)) {
+            $expressions = func_get_args();
+        }
         $having = $this->getSqlPart('having');
         if ($having instanceof CompositeExpression && $having->getType() == CompositeExpression::TYPE_AND) {
             $having->addMultiple($expressions);
@@ -195,7 +197,9 @@ class Query
 
     function orHaving($expressions)
     {
-        $expressions = is_array($expressions) ? $expressions : func_get_args();
+        if (!is_array($expressions)) {
+            $expressions = func_get_args();
+        }
         $having = $this->getSqlPart('having');
         if ($having instanceof CompositeExpression && $having->getType() == CompositeExpression::TYPE_OR) {
             $having->addMultiple($expressions);
