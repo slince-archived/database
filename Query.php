@@ -29,16 +29,19 @@ class Query
         'update' => [],
         'set' => [],
     ];
+
     /**
      * @var Connection
      */
     protected $connection;
 
-    function __construct(Connection $connection = null)
+    protected $paramters = [];
+
+    protected $parameterTypes = [];
+
+    function __construct(Connection $connection)
     {
-        if (!is_null($connection)) {
-            $this->setConnection($connection);
-        }
+        $this->setConnection($connection);
     }
 
     function setConnection(Connection $connection)
@@ -56,14 +59,33 @@ class Query
         return $this->type;
     }
 
+    function getSqlPart($name)
+    {
+        return $this->sqlParts[$name] ?: null;
+    }
+
     function getSqlParts()
     {
         return $this->sqlParts;
     }
 
-    function getSqlPart($name)
+    function setParameter($name, $value, $type = null)
     {
-        return $this->sqlParts[$name] ?: null;
+        $this->paramters[$name] = $value;
+        if (!is_null($type)) {
+            $this->parameterTypes[$name] = $type;
+        }
+    }
+
+    function setParameters(array $parameters, array $parameterTypes = [])
+    {
+        $this->paramters = $parameters;
+        $this->parameterTypes = $parameterTypes;
+    }
+
+    function getParameter()
+    {
+        
     }
 
     function newExpr($conjunction = 'AND')
@@ -100,9 +122,13 @@ class Query
         return $this;
     }
 
-    function delete()
+    function delete($table, $alias = null)
     {
         $this->type = self::DELETE;
+        $this->sqlParts['delete'] = [
+            'table' => $table,
+            'alias' => $alias
+        ];
         return $this;
     }
 
@@ -168,11 +194,11 @@ class Query
 
     function having($expressions)
     {
-        if (!$expressions instanceof CompositeExpression) {
+        if (!$expressions instanceof QueryExpression) {
             if (!is_array($expressions)) {
                 $expressions = func_get_args();
             }
-            $expressions = new CompositeExpression(CompositeExpression::TYPE_AND, $expressions);
+            $expressions = $this->newExpr()->addMultiple($expressions);
         }
         $this->sqlParts['having'] = $expressions;
         return $this;
@@ -181,33 +207,23 @@ class Query
 
     function andHaving($expressions)
     {
-        if (!is_array($expressions)) {
-            $expressions = func_get_args();
-        }
         $having = $this->getSqlPart('having');
-        if ($having instanceof CompositeExpression && $having->getType() == CompositeExpression::TYPE_AND) {
-            $having->addMultiple($expressions);
-        } else {
-            array_unshift($expressions, $having);
-            $having = new CompositeExpression(CompositeExpression::TYPE_AND, $expressions);
-            $this->sqlParts['having'] = $having;
+        if (!$having instanceof QueryExpression) {
+            $having = $this->newExpr(CompositeExpression::TYPE_AND);
         }
+        $having = call_user_func_array([$having, 'andX'], func_get_args());
+        $this->sqlParts['having'] = $having;
         return $this;
     }
 
     function orHaving($expressions)
     {
-        if (!is_array($expressions)) {
-            $expressions = func_get_args();
+        $having = $this->getSqlPart('where');
+        if (!$having instanceof QueryExpression) {
+            $having = $this->newExpr(CompositeExpression::TYPE_OR);
         }
-        $having = $this->getSqlPart('having');
-        if ($having instanceof CompositeExpression && $having->getType() == CompositeExpression::TYPE_OR) {
-            $having->addMultiple($expressions);
-        } else {
-            array_unshift($expressions, $having);
-            $having = new CompositeExpression(CompositeExpression::TYPE_OR, $expressions);
-            $this->sqlParts['having'] = $having;
-        }
+        $having = call_user_func_array([$having, 'orX'], func_get_args());
+        $this->sqlParts['having'] = $having;
         return $this;
     }
 

@@ -14,6 +14,15 @@ class QueryCompiler implements QueryCompilerInterface
             case Query::SELECT:
                 $statement = $this->createSqlForSelect($query->getSqlParts());
                 break;
+            case Query::INSERT:
+                $statement = $this->createSqlForInsert($query->getSqlParts());
+                break;
+            case Query::UPDATE:
+                $statement = $this->createSqlForUpdate($query->getSqlParts());
+                break;
+            case Query::DELETE:
+                $statement = $this->createSqlForDelete($query->getSqlParts());
+                break;
         }
         return $statement;
     }
@@ -66,6 +75,31 @@ class QueryCompiler implements QueryCompilerInterface
             $statement = " LIMIT {$offset}, {$limit}";
         }
         return $statement;
+    }
+
+    function createSqlForInsert(array $sqlParts)
+    {
+        return "INSERT INTO {$sqlParts['insert']} ("
+            . implode(', ', array_keys($sqlParts['values']))
+            . ') VALUES (' . implode(', ', $sqlParts['values']) . ')';
+    }
+
+    function createSqlForUpdate(array $sqlParts)
+    {
+        $statement = '';
+        foreach ($sqlParts['set'] as $field => $value) {
+            $statement .= "{$field} = {$value}";
+        }
+        return 'UPDATE ' . $this->processTables([$sqlParts['update']])
+            . " SET {$statement}"
+            . ($sqlParts['where'] ? ' WHERE ' . (string)$sqlParts['where'] : '');
+    }
+
+    function createSqlForDelete(array $sqlParts)
+    {
+        return 'DELETE FROM '
+            . $this->processTables([$sqlParts['delete']])
+            . ($sqlParts['where'] ? ' WHERE ' . (string)$sqlParts['where'] : '');
     }
 
     protected function processTables($tables)

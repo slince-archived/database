@@ -19,6 +19,11 @@ interface DriverInterface
      */
     function prepare($statement);
 
+    /**
+     * 执行一条非查询
+     * @param $statement
+     * @return int
+     */
     function execute($statement);
 
     function query($statement);

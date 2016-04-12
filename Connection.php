@@ -39,9 +39,12 @@ class Connection implements ConnectionInterface
         return $this->driver;
     }
 
+
     function connect()
     {
-        if (! $this->driver->connect()) {
+        try {
+            $this->driver->connect();
+        } catch (\Exception $e) {
             throw new RuntimeException('Unable to connect to the database');
         }
     }
@@ -78,16 +81,19 @@ class Connection implements ConnectionInterface
 
     function beginTransaction()
     {
+        $this->connect();
         return $this->driver->beginTransaction();
     }
 
     function commit()
     {
+        $this->connect();
         return $this->driver->commit();
     }
 
     function rollback()
     {
+        $this->connect();
         return $this->driver->rollback();
     }
 
@@ -98,11 +104,13 @@ class Connection implements ConnectionInterface
 
     function execute($statement)
     {
+        $this->connect();
         return $this->driver->execute($statement);
     }
 
     function query($statement)
     {
+        $this->connect();
         return $this->driver->query($statement);
     }
 

@@ -36,7 +36,6 @@ abstract class Driver implements DriverInterface
 
     function beginTransaction()
     {
-        $this->connect();
         if ($this->pdo->inTransaction()) {
             return true;
         }
@@ -45,7 +44,6 @@ abstract class Driver implements DriverInterface
 
     function commit()
     {
-        $this->connect();
         if (!$this->pdo->inTransaction()) {
             return false;
         }
@@ -54,7 +52,6 @@ abstract class Driver implements DriverInterface
 
     function rollback()
     {
-        $this->connect();
         if (!$this->pdo->inTransaction()) {
             return false;
         }

@@ -20,7 +20,8 @@ class QueryExpression
     function __construct($type = CompositeExpression::TYPE_AND, $expressions = array())
     {
         $this->type = $type;
-        $this->expressions = new CompositeExpression($type, $expressions);
+        $this->expressions = new CompositeExpression($type);
+        $this->addMultiple($expressions);
     }
 
     function __toString()
@@ -75,9 +76,14 @@ class QueryExpression
         return $this;
     }
 
-    function addMultiple($expressions)
+    function addMultiple(array $expressions)
     {
-        $this->expressions->addMultiple($expressions);
+        foreach ($expressions as $expression) {
+            if (is_callable($expression)) {
+                return call_user_func($expression, $this);
+            }
+            $this->add($expression);
+        }
         return $this;
     }
 
