@@ -1,4 +1,9 @@
 <?php
+<?php
+/**
+ * slince database library
+ * @author Tao <taosikai@yeah.net>
+ */
 namespace Slince\Database;
 
 use Slince\Database\Expression\CompositeExpression;
@@ -6,13 +11,36 @@ use Slince\Database\Expression\QueryExpression;
 
 class Query
 {
+    /**
+     * query类型select
+     */
     const SELECT = 1;
+
+    /**
+     * query类型delete
+     */
     const DELETE = 2;
+
+    /**
+     * query类型update
+     */
     const UPDATE = 3;
+
+    /**
+     * query类型insert
+     */
     const INSERT = 4;
 
+    /**
+     * 当前query类型
+     * @var int
+     */
     protected $type;
 
+    /**
+     * sql片段
+     * @var array
+     */
     protected $sqlParts = [
         'select' => [],
         'from' => [],
@@ -31,68 +59,120 @@ class Query
     ];
 
     /**
+     * 数据库连接对象
      * @var Connection
      */
     protected $connection;
 
-    protected $paramters = [];
+    /**
+     * 参数类型绑定
+     * @var ValueBinder
+     */
+    protected $valueBinder;
 
-    protected $parameterTypes = [];
-
-    function __construct(Connection $connection)
+    public function __construct(Connection $connection)
     {
         $this->setConnection($connection);
     }
 
-    function setConnection(Connection $connection)
+    /**
+     * 设置连接对象
+     * @param Connection $connection
+     */
+    public function setConnection(Connection $connection)
     {
         $this->connection = $connection;
     }
 
-    function getConnection()
+    /**
+     * 获取连接对象
+     * @return Connection
+     */
+    public function getConnection()
     {
         return $this->connection;
     }
 
-    function getType()
+    /**
+     * 获取参数绑定器
+     * @return ValueBinder
+     */
+    public function getValueBinder()
+    {
+        if (is_null($this->valueBinder)) {
+            $this->valueBinder = new ValueBinder();
+        }
+        return $this->valueBinder;
+    }
+
+    /**
+     * 获取当前query类型
+     * @return int
+     */
+    public function getType()
     {
         return $this->type;
     }
 
-    function getSqlPart($name)
+    /**
+     * 获取指定sql片段
+     * @param $name
+     * @return mixed
+     */
+    public function getSqlPart($name)
     {
         return $this->sqlParts[$name] ?: null;
     }
 
-    function getSqlParts()
+    /**
+     * 获取所有的数据库片段
+     * @return array
+     */
+    public function getSqlParts()
     {
         return $this->sqlParts;
     }
 
-    function setParameter($name, $value, $type = null)
+    /**
+     * 设置参数
+     * @param $name
+     * @param $value
+     * @param mixed $type
+     * @return $this
+     */
+    public function setParameter($name, $value, $type = null)
     {
-        $this->paramters[$name] = $value;
-        if (!is_null($type)) {
-            $this->parameterTypes[$name] = $type;
-        }
+        $this->valueBinder->setParameter($name, $value, $type);
+        return $this;
     }
 
-    function setParameters(array $parameters, array $parameterTypes = [])
+    /**
+     * 批量设置参数
+     * @param array $parameters
+     * @param array $parameterTypes
+     * @return $this
+     */
+    public function setParameters(array $parameters, array $parameterTypes = [])
     {
-        $this->paramters = $parameters;
-        $this->parameterTypes = $parameterTypes;
+        $this->valueBinder->setParameters($parameters, $parameterTypes);
+        return $this;
     }
 
-    function getParameter()
-    {
-        
-    }
-
-    function newExpr($conjunction = 'AND')
+    /**
+     * 创建query expression
+     * @param string $conjunction
+     * @return QueryExpression
+     */
+    public function newExpr($conjunction = 'AND')
     {
         return new QueryExpression($conjunction);
     }
 
+    /**
+     * 插入query
+     * @param $table
+     * @return $this
+     */
     public function insert($table)
     {
         $this->type = self::INSERT;
@@ -100,13 +180,24 @@ class Query
         return $this;
     }
 
-    function values($data)
+    /**
+     * 插入query值部分
+     * @param $data
+     * @return $this
+     */
+    public function values($data)
     {
         $this->sqlParts['values'] = $data;
         return $this;
     }
 
-    function update($table, $alias = null)
+    /**
+     * 更新query
+     * @param $table
+     * @param null $alias
+     * @return $this
+     */
+    public function update($table, $alias = null)
     {
         $this->type = self::UPDATE;
         $this->sqlParts['update'] = [
@@ -116,13 +207,24 @@ class Query
         return $this;
     }
 
-    function set($data)
+    public function set($data, array $types = [])
     {
-        $this->sqlParts['set'] = $data;
+        $bindings = $this->extractBindings($data);
+        $this->sqlParts['set'] = $bindings;
+        $this->getValueBinder()->setParameters($data, $types);
         return $this;
     }
 
-    function delete($table, $alias = null)
+    public function extractBindings($data)
+    {
+        $bindings = [];
+        foreach ($data as $key => $value) {
+            $bindings[$key] = ':' . $key;
+        }
+        return $bindings;
+    }
+
+    public function delete($table, $alias = null)
     {
         $this->type = self::DELETE;
         $this->sqlParts['delete'] = [
@@ -132,7 +234,7 @@ class Query
         return $this;
     }
 
-    function select($fields = null)
+    public function select($fields = null)
     {
         $this->type = self::SELECT;
         if (!is_array($fields)) {
@@ -142,7 +244,7 @@ class Query
         return $this;
     }
 
-    function from($table, $alias = null)
+    public function from($table, $alias = null)
     {
         $this->sqlParts['from'][] = [
             'table' => $table,
@@ -151,7 +253,7 @@ class Query
         return $this;
     }
 
-    function where($expressions)
+    public function where($expressions)
     {
         if (!$expressions instanceof QueryExpression) {
             if (!is_array($expressions)) {
@@ -163,7 +265,7 @@ class Query
         return $this;
     }
 
-    function andWhere($expressions)
+    public function andWhere($expressions)
     {
         $where = $this->getSqlPart('where');
         if (!$where instanceof QueryExpression) {
@@ -174,7 +276,7 @@ class Query
         return $this;
     }
 
-    function orWhere($expressions)
+    public function orWhere($expressions)
     {
         $where = $this->getSqlPart('where');
         if (!$where instanceof QueryExpression) {
@@ -185,14 +287,14 @@ class Query
         return $this;
     }
 
-    function group($field)
+    public function group($field)
     {
         $group = is_array($field) ? $field : func_get_args();
         $this->sqlParts['group'] = $group;
         return $this;
     }
 
-    function having($expressions)
+    public function having($expressions)
     {
         if (!$expressions instanceof QueryExpression) {
             if (!is_array($expressions)) {
@@ -205,7 +307,7 @@ class Query
     }
 
 
-    function andHaving($expressions)
+    public function andHaving($expressions)
     {
         $having = $this->getSqlPart('having');
         if (!$having instanceof QueryExpression) {
@@ -216,7 +318,7 @@ class Query
         return $this;
     }
 
-    function orHaving($expressions)
+    public function orHaving($expressions)
     {
         $having = $this->getSqlPart('where');
         if (!$having instanceof QueryExpression) {
@@ -227,7 +329,7 @@ class Query
         return $this;
     }
 
-    function order($sort, $direction = null)
+    public function order($sort, $direction = null)
     {
         if (!is_array($sort)) {
             $order[] = [
@@ -241,24 +343,24 @@ class Query
         return $this;
     }
 
-    function limit($num)
+    public function limit($num)
     {
         $this->sqlParts['limit'] = $num;
         return $this;
     }
 
-    function offset($num)
+    public function offset($num)
     {
         $this->sqlParts['offset'] = $num;
         return $this;
     }
 
-    function toSql()
+    public function toSql()
     {
         return $this->getConnection()->compileQuery($this);
     }
 
-    function execute()
+    public function execute()
     {
         return $this->connection->run($this);
     }

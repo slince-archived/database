@@ -7,9 +7,9 @@ interface ConnectionInterface
     
     function newQuery();
 
-    function insert($table, $columns);
+    function insert($table, array $data, array $types = []);
 
-    function update($table, $data, $conditions = []);
+    function update($table, array $data, $conditions = [], array $types = []);
 
     function delete($table, $conditions = []);
 

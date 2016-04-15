@@ -54,27 +54,26 @@ class Connection implements ConnectionInterface
         return new Query();
     }
 
-    function insert($table, $data)
+    function insert($table, array $data, array $types = [])
     {
-        $columns = array_keys($data);
-        $this->newQuery()->insert($columns)
-            ->into($table)
-            ->values($data)
+        return $this->newQuery()->insert($table)
+            ->values(array_combine(array_keys($data), array_fill(0, '?', count($data))))
+            ->setParameters(array_values($data), $types)
             ->execute();
     }
 
-    function update($table, $data, $conditions = [])
+    function update($table, array $data, $conditions = [], array $types = [])
     {
-        $this->newQuery()->update($table)
-            ->set($data)
+        return $this->newQuery()->update($table)
+            ->set(array_combine(array_keys($data), array_fill(0, '?', count($data))))
             ->where($conditions)
+            ->setParameters(array_values($data), $types)
             ->execute();
     }
 
-    function delete($table, $conditions = [])
+    function delete($table, $conditions = [], array $types = [])
     {
-        $this->newQuery()->delete()
-            ->from($table)
+        return $this->newQuery()->delete($table)
             ->where($conditions)
             ->execute();
     }
@@ -114,15 +113,37 @@ class Connection implements ConnectionInterface
         return $this->driver->query($statement);
     }
 
+    function prepare($statement)
+    {
+        $this->connect();
+        return $this->driver->prepare($statement);
+    }
+
     function run(Query $query)
     {
-        $statement = $this->driver->prepare($this->compileQuery($query));
-        $statement->execute();
-        return $statement;
+        $statement = $this->compileQuery($query);
+        if ($query->getType() != Query::SELECT && $query->getValueBinder()->isEmpty()) {
+            $result = $this->execute($statement);
+        } else {
+            $statement = $this->prepare($statement);
+            $query->getValueBinder()->attachTo($statement);
+            $statement->execute();
+            if ($query->getType() != Query::SELECT) {
+                $result = $statement->rowCount();
+            } else {
+                $result = $statement;
+            }
+        }
+        return $result;
     }
 
     static function getSupportedDrivers()
     {
         return array_keys(static::$supportedDrivers);
+    }
+
+    protected function prepareBindings(array $bindings)
+    {
+
     }
 }
