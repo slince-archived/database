@@ -1,4 +1,8 @@
 <?php
+/**
+ * slince database library
+ * @author Tao <taosikai@yeah.net>
+ */
 namespace Slince\Database;
 
 use Slince\Database\Driver\DriverInterface;
@@ -12,8 +16,12 @@ class Connection implements ConnectionInterface
      */
     protected $driver;
 
+    /**
+     * 支持的数据库系统
+     * @var array
+     */
     protected static $supportedDrivers = [
-        'mysql' => '\\Slince\\Database\\Driver\\MysqlDriver'
+        'mysql' => 'Slince\\Database\\Driver\\MysqlDriver'
     ];
 
     function __construct(array $config)
@@ -24,6 +32,12 @@ class Connection implements ConnectionInterface
         $this->driver = $this->createDriver($config['driver'], $config);
     }
 
+    /**
+     * 创建driver
+     * @param $driver
+     * @param array $config
+     * @return mixed
+     */
     protected function createDriver($driver, array $config)
     {
         $driverClass = static::$supportedDrivers[$driver];
@@ -39,7 +53,11 @@ class Connection implements ConnectionInterface
         return $this->driver;
     }
 
-
+    /**
+     * 连接数据库
+     * @return void
+     * @throws RuntimeException
+     */
     function connect()
     {
         try {
@@ -49,28 +67,52 @@ class Connection implements ConnectionInterface
         }
     }
 
+    /**
+     * 创建查询构造器
+     * @return Query
+     */
     function newQuery()
     {
         return new Query();
     }
 
+    /**
+     * 执行insert操作
+     * @param $table
+     * @param array $data
+     * @param array $types
+     * @return int|\PDOStatement
+     */
     function insert($table, array $data, array $types = [])
     {
         return $this->newQuery()->insert($table)
-            ->values(array_combine(array_keys($data), array_fill(0, '?', count($data))))
-            ->setParameters(array_values($data), $types)
+            ->values($data)
             ->execute();
     }
 
+    /**
+     * 执行update操作
+     * @param $table
+     * @param array $data
+     * @param array $conditions
+     * @param array $types
+     * @return int|\PDOStatement
+     */
     function update($table, array $data, $conditions = [], array $types = [])
     {
         return $this->newQuery()->update($table)
-            ->set(array_combine(array_keys($data), array_fill(0, '?', count($data))))
+            ->set($data)
             ->where($conditions)
-            ->setParameters(array_values($data), $types)
             ->execute();
     }
 
+    /**
+     * 执行删除操作
+     * @param $table
+     * @param array $conditions
+     * @param array $types
+     * @return int|\PDOStatement
+     */
     function delete($table, $conditions = [], array $types = [])
     {
         return $this->newQuery()->delete($table)
@@ -78,47 +120,84 @@ class Connection implements ConnectionInterface
             ->execute();
     }
 
+    /**
+     * 开启事务
+     * @return mixed
+     */
     function beginTransaction()
     {
         $this->connect();
         return $this->driver->beginTransaction();
     }
 
+    /**
+     * 提交事务
+     * @return mixed
+     */
     function commit()
     {
         $this->connect();
         return $this->driver->commit();
     }
 
+    /**
+     * 回退事务
+     * @return mixed
+     */
     function rollback()
     {
         $this->connect();
         return $this->driver->rollback();
     }
 
+    /**
+     * 编译query
+     * @param Query $query
+     * @return mixed
+     */
     function compileQuery(Query $query)
     {
         return $this->driver->compileQuery($query);
     }
 
+    /**
+     * 执行非查询的sql
+     * @param $statement
+     * @return int
+     */
     function execute($statement)
     {
         $this->connect();
         return $this->driver->execute($statement);
     }
 
+    /**
+     * 执行查询sql
+     * @param $statement
+     * @return mixed
+     */
     function query($statement)
     {
         $this->connect();
         return $this->driver->query($statement);
     }
 
+    /**
+     * 预处理sql
+     * @param $statement
+     * @return \PDOStatement
+     */
     function prepare($statement)
     {
         $this->connect();
         return $this->driver->prepare($statement);
     }
 
+    /**
+     * 执行query
+     * @param Query $query
+     * @return int|\PDOStatement
+     */
     function run(Query $query)
     {
         $statement = $this->compileQuery($query);
@@ -137,13 +216,12 @@ class Connection implements ConnectionInterface
         return $result;
     }
 
+    /**
+     * 获取支持的数据库系统
+     * @return array
+     */
     static function getSupportedDrivers()
     {
         return array_keys(static::$supportedDrivers);
-    }
-
-    protected function prepareBindings(array $bindings)
-    {
-
     }
 }

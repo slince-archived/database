@@ -71,7 +71,7 @@ class CompositeExpression implements \Countable
      *
      * @param array $parts
      *
-     * @return \Doctrine\DBAL\Query\Expression\CompositeExpression
+     * @return $this
      */
     public function addMultiple(array $parts = array())
     {
@@ -87,7 +87,7 @@ class CompositeExpression implements \Countable
      *
      * @param mixed $part
      *
-     * @return \Doctrine\DBAL\Query\Expression\CompositeExpression
+     * @return $this
      */
     public function add($part)
     {

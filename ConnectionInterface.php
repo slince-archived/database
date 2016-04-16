@@ -1,4 +1,8 @@
 <?php
+/**
+ * slince database library
+ * @author Tao <taosikai@yeah.net>
+ */
 namespace Slince\Database;
 
 interface ConnectionInterface

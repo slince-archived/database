@@ -23,6 +23,12 @@ class ValueBinder
         $this->parameterTypes = $parameterTypes;
     }
 
+    function addParameters(array $parameters, array $parameterTypes = [])
+    {
+        $this->parameters = array_merge($this->parameters, $parameters);
+        $this->parameterTypes = array_merge($this->parameterTypes, $parameterTypes);
+    }
+
     function getParameter($name)
     {
         return isset($this->parameters[$name]) ? $this->parameters[$name] : null;
@@ -47,6 +53,7 @@ class ValueBinder
     {
         return empty($this->parameters);
     }
+    
     function attachTo(PDOStatement $statement)
     {
         foreach ($this->parameters as $name => $parameter) {

@@ -1,7 +1,9 @@
 <?php
 namespace Slince\Database\Expression;
 
-class QueryExpression
+use Slince\Database\Query;
+
+class QueryExpression extends CompositeExpression
 {
     const EQ = '=';
     const NEQ = '<>';
@@ -10,33 +12,18 @@ class QueryExpression
     const GT = '>';
     const GTE = '>=';
 
-    /**
-     * @var CompositeExpression
-     */
-    protected $expressions;
-
     protected $type;
 
-    function __construct($type = CompositeExpression::TYPE_AND, $expressions = array())
+    /**
+     * @var Query
+     */
+    protected $query;
+
+    function __construct(Query $query, $type = CompositeExpression::TYPE_AND, $expressions = array())
     {
-        $this->type = $type;
-        $this->expressions = new CompositeExpression($type);
+        $this->query = $query;
+        parent::__construct($type);
         $this->addMultiple($expressions);
-    }
-
-    function __toString()
-    {
-        return (string)$this->expressions;
-    }
-
-    protected function prepareExpressions(array $expressions)
-    {
-        return array_map(function($expression){
-            if (is_callable($expression)) {
-                $expression = call_user_func($expression, $this);
-            }
-            return $expression;
-        }, $expressions);
     }
 
     function getType()
@@ -52,8 +39,8 @@ class QueryExpression
         if ($this->type == CompositeExpression::TYPE_AND) {
             return $this->addMultiple($expressions);
         }
-        array_unshift($expressions, $this->expressions);
-        $queryExpression = new self(CompositeExpression::TYPE_AND, $expressions);
+        array_unshift($expressions, $this);
+        $queryExpression = new self($this->query, CompositeExpression::TYPE_AND, $expressions);
         return $queryExpression;
     }
 
@@ -65,20 +52,14 @@ class QueryExpression
         if ($this->type == CompositeExpression::TYPE_OR) {
             return $this->addMultiple($expressions);
         }
-        array_unshift($expressions, $this->expressions);
-        $queryExpression = new self(CompositeExpression::TYPE_OR, $expressions);
+        array_unshift($expressions, $this);
+        $queryExpression = new self($this->query, CompositeExpression::TYPE_OR, $expressions);
         return $queryExpression;
-    }
-
-    function add($expression)
-    {
-        $this->expressions->add($expression);
-        return $this;
     }
 
     function addMultiple(array $expressions)
     {
-        foreach ($expressions as $expression) {
+        foreach ($expressions as $key => $expression) {
             if (is_callable($expression)) {
                 return call_user_func($expression, $this);
             }
@@ -119,7 +100,8 @@ class QueryExpression
      */
     public function eq($x, $y)
     {
-        return $this->comparison($x, self::EQ, $y);
+        $this->query->setParameter($y);
+        return $this->comparison($x, self::EQ, '?');
     }
 
     /**
@@ -138,7 +120,8 @@ class QueryExpression
      */
     public function neq($x, $y)
     {
-        return $this->comparison($x, self::NEQ, $y);
+        $this->query->setParameter($y);
+        return $this->comparison($x, self::NEQ, '?');
     }
 
     /**
@@ -157,7 +140,8 @@ class QueryExpression
      */
     public function lt($x, $y)
     {
-        return $this->comparison($x, self::LT, $y);
+        $this->query->setParameter($y);
+        return $this->comparison($x, self::LT, '?');
     }
 
     /**
@@ -176,7 +160,8 @@ class QueryExpression
      */
     public function lte($x, $y)
     {
-        return $this->comparison($x, self::LTE, $y);
+        $this->query->setParameter($y);
+        return $this->comparison($x, self::LTE, '?');
     }
 
     /**
@@ -195,7 +180,8 @@ class QueryExpression
      */
     public function gt($x, $y)
     {
-        return $this->comparison($x, self::GT, $y);
+        $this->query->setParameter($y);
+        return $this->comparison($x, self::GT, '?');
     }
 
     /**
@@ -214,7 +200,8 @@ class QueryExpression
      */
     public function gte($x, $y)
     {
-        return $this->comparison($x, self::GTE, $y);
+        $this->query->setParameter($y);
+        return $this->comparison($x, self::GTE, '?');
     }
 
     /**
@@ -251,7 +238,8 @@ class QueryExpression
      */
     public function like($x, $y)
     {
-        return $this->comparison($x, 'LIKE', $y);
+        $this->query->setParameter($y);
+        return $this->comparison($x, 'LIKE', '?');
     }
 
     /**
@@ -264,7 +252,8 @@ class QueryExpression
      */
     public function notLike($x, $y)
     {
-        return $this->comparison($x, 'NOT LIKE', $y);
+        $this->query->setParameter($y);
+        return $this->comparison($x, 'NOT LIKE', '?');
     }
 
     /**
@@ -277,7 +266,9 @@ class QueryExpression
      */
     public function in($x, $y)
     {
-        return $this->comparison($x, 'IN', '(' . implode(', ', (array)$y) . ')');
+        $this->query->addParameters($y);
+        $y = array_fill(0, count($y), '?');
+        return $this->comparison($x, 'IN', '(' . implode(', ', $y) . ')');
     }
 
     /**
@@ -290,6 +281,8 @@ class QueryExpression
      */
     public function notIn($x, $y)
     {
+        $this->query->addParameters($y);
+        $y = array_fill(0, count($y), '?');
         return $this->comparison($x, 'NOT IN', '(' . implode(', ', (array)$y) . ')');
     }
 }

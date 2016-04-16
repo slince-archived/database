@@ -1,5 +1,4 @@
 <?php
-<?php
 /**
  * slince database library
  * @author Tao <taosikai@yeah.net>
@@ -146,6 +145,12 @@ class Query
         return $this;
     }
 
+    public function addParameters(array $parameters, array $parameterTypes = [])
+    {
+        $this->valueBinder->setParameters($parameters, $parameterTypes);
+        return $this;
+    }
+
     /**
      * 批量设置参数
      * @param array $parameters
@@ -160,12 +165,12 @@ class Query
 
     /**
      * 创建query expression
-     * @param string $conjunction
+     * @param string $tie
      * @return QueryExpression
      */
-    public function newExpr($conjunction = 'AND')
+    public function newExpr($tie = 'AND')
     {
-        return new QueryExpression($conjunction);
+        return new QueryExpression($this, $tie);
     }
 
     /**
@@ -187,7 +192,8 @@ class Query
      */
     public function values($data)
     {
-        $this->sqlParts['values'] = $data;
+        $this->sqlParts['values'] = array_fill(0, count($data), '?');;
+        $this->addParameters(array_values($data));
         return $this;
     }
 
@@ -207,23 +213,24 @@ class Query
         return $this;
     }
 
-    public function set($data, array $types = [])
+    /**
+     * update set
+     * @param $data
+     * @return $this
+     */
+    public function set($data)
     {
-        $bindings = $this->extractBindings($data);
-        $this->sqlParts['set'] = $bindings;
-        $this->getValueBinder()->setParameters($data, $types);
+        $this->sqlParts['set'] = array_fill(0, count($data), '?');
+        $this->addParameters(array_values($data));
         return $this;
     }
 
-    public function extractBindings($data)
-    {
-        $bindings = [];
-        foreach ($data as $key => $value) {
-            $bindings[$key] = ':' . $key;
-        }
-        return $bindings;
-    }
-
+    /**
+     * delete
+     * @param $table
+     * @param null $alias
+     * @return $this
+     */
     public function delete($table, $alias = null)
     {
         $this->type = self::DELETE;
@@ -234,6 +241,11 @@ class Query
         return $this;
     }
 
+    /**
+     * select
+     * @param null $fields
+     * @return $this
+     */
     public function select($fields = null)
     {
         $this->type = self::SELECT;
@@ -244,6 +256,12 @@ class Query
         return $this;
     }
 
+    /**
+     * select from
+     * @param $table
+     * @param null $alias
+     * @return $this
+     */
     public function from($table, $alias = null)
     {
         $this->sqlParts['from'][] = [
@@ -253,6 +271,26 @@ class Query
         return $this;
     }
 
+    /**
+     *  设置where条件
+     * $query->select('id', 'name')->from('posts')
+     *
+     *  // 1、
+     *  $query->where('id = 8', "name = 'hello'");
+     *
+     * // 2、
+     * $query->where(['id = 8', "name = 'hello'"]);
+     *
+     * // 3、
+     * $query->where(['id => 8, 'name' => 'hello']);
+     *
+     * // 4、
+     * $query->where(function(QueryExpression $qe){
+     *      return $qe->eq('id', 8)->eq('name', 'hello');
+     * })
+     * @param $expressions
+     * @return $this
+     */
     public function where($expressions)
     {
         if (!$expressions instanceof QueryExpression) {
@@ -265,6 +303,11 @@ class Query
         return $this;
     }
 
+    /**
+     *  and where
+     * @param $expressions
+     * @return $this
+     */
     public function andWhere($expressions)
     {
         $where = $this->getSqlPart('where');
@@ -276,6 +319,11 @@ class Query
         return $this;
     }
 
+    /**
+     * or where
+     * @param $expressions
+     * @return $this
+     */
     public function orWhere($expressions)
     {
         $where = $this->getSqlPart('where');
@@ -287,6 +335,11 @@ class Query
         return $this;
     }
 
+    /**
+     *  group
+     * @param $field
+     * @return $this
+     */
     public function group($field)
     {
         $group = is_array($field) ? $field : func_get_args();
@@ -294,6 +347,11 @@ class Query
         return $this;
     }
 
+    /**
+     * having
+     * @param $expressions
+     * @return $this
+     */
     public function having($expressions)
     {
         if (!$expressions instanceof QueryExpression) {
@@ -306,7 +364,11 @@ class Query
         return $this;
     }
 
-
+    /**
+     * and having
+     * @param $expressions
+     * @return $this
+     */
     public function andHaving($expressions)
     {
         $having = $this->getSqlPart('having');
@@ -318,6 +380,11 @@ class Query
         return $this;
     }
 
+    /**
+     *  or having
+     * @param $expressions
+     * @return $this
+     */
     public function orHaving($expressions)
     {
         $having = $this->getSqlPart('where');
@@ -329,6 +396,12 @@ class Query
         return $this;
     }
 
+    /**
+     * order
+     * @param $sort
+     * @param null $direction
+     * @return $this
+     */
     public function order($sort, $direction = null)
     {
         if (!is_array($sort)) {
@@ -343,23 +416,41 @@ class Query
         return $this;
     }
 
+    /**
+     * limit
+     * @param $num
+     * @return $this
+     */
     public function limit($num)
     {
         $this->sqlParts['limit'] = $num;
         return $this;
     }
 
+    /**
+     * offset
+     * @param $num
+     * @return $this
+     */
     public function offset($num)
     {
         $this->sqlParts['offset'] = $num;
         return $this;
     }
 
+    /**
+     * 编译当前query为原生的sql
+     * @return string
+     */
     public function toSql()
     {
         return $this->getConnection()->compileQuery($this);
     }
 
+    /**
+     * 执行当前query
+     * @return int|\PDOStatement
+     */
     public function execute()
     {
         return $this->connection->run($this);
