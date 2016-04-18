@@ -33,7 +33,7 @@ abstract class Driver implements DriverInterface
     {
         if (is_null($this->pdo)) {
             $dsn = $this->createDsn($this->config);
-            $this->pdo = new PDO($dsn, $this->config);
+            $this->pdo = new PDO($dsn, $this->config['username'], $this->config['password']);
         }
         return true;
     }

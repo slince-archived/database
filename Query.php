@@ -141,13 +141,13 @@ class Query
      */
     public function setParameter($name, $value, $type = null)
     {
-        $this->valueBinder->setParameter($name, $value, $type);
+        $this->getValueBinder()->setParameter($name, $value, $type);
         return $this;
     }
 
     public function addParameters(array $parameters, array $parameterTypes = [])
     {
-        $this->valueBinder->setParameters($parameters, $parameterTypes);
+        $this->getValueBinder()->setParameters($parameters, $parameterTypes);
         return $this;
     }
 
@@ -159,7 +159,7 @@ class Query
      */
     public function setParameters(array $parameters, array $parameterTypes = [])
     {
-        $this->valueBinder->setParameters($parameters, $parameterTypes);
+        $this->getValueBinder()->setParameters($parameters, $parameterTypes);
         return $this;
     }
 

@@ -24,7 +24,7 @@ class Connection implements ConnectionInterface
         'mysql' => 'Slince\\Database\\Driver\\MysqlDriver'
     ];
 
-    function __construct(array $config)
+    public function __construct(array $config)
     {
         if (empty($config['driver']) || ! isset(static::$supportedDrivers[$config['driver']])) {
             throw new InvalidArgumentException(sprintf('Driver "%s" is not supported', $config['driver']));
@@ -48,7 +48,7 @@ class Connection implements ConnectionInterface
      * 获取driver
      * @return DriverInterface
      */
-    function getDriver()
+    public function getDriver()
     {
         return $this->driver;
     }
@@ -58,7 +58,7 @@ class Connection implements ConnectionInterface
      * @return void
      * @throws RuntimeException
      */
-    function connect()
+    public function connect()
     {
         try {
             $this->driver->connect();
@@ -71,9 +71,9 @@ class Connection implements ConnectionInterface
      * 创建查询构造器
      * @return Query
      */
-    function newQuery()
+    public function newQuery()
     {
-        return new Query();
+        return new Query($this);
     }
 
     /**
@@ -83,7 +83,7 @@ class Connection implements ConnectionInterface
      * @param array $types
      * @return int|\PDOStatement
      */
-    function insert($table, array $data, array $types = [])
+    public function insert($table, array $data, array $types = [])
     {
         return $this->newQuery()->insert($table)
             ->values($data)
@@ -98,7 +98,7 @@ class Connection implements ConnectionInterface
      * @param array $types
      * @return int|\PDOStatement
      */
-    function update($table, array $data, $conditions = [], array $types = [])
+    public function update($table, array $data, $conditions = [], array $types = [])
     {
         return $this->newQuery()->update($table)
             ->set($data)
@@ -113,7 +113,7 @@ class Connection implements ConnectionInterface
      * @param array $types
      * @return int|\PDOStatement
      */
-    function delete($table, $conditions = [], array $types = [])
+    public function delete($table, $conditions = [], array $types = [])
     {
         return $this->newQuery()->delete($table)
             ->where($conditions)
@@ -124,7 +124,7 @@ class Connection implements ConnectionInterface
      * 开启事务
      * @return mixed
      */
-    function beginTransaction()
+    public function beginTransaction()
     {
         $this->connect();
         return $this->driver->beginTransaction();
@@ -134,7 +134,7 @@ class Connection implements ConnectionInterface
      * 提交事务
      * @return mixed
      */
-    function commit()
+    public function commit()
     {
         $this->connect();
         return $this->driver->commit();
@@ -144,7 +144,7 @@ class Connection implements ConnectionInterface
      * 回退事务
      * @return mixed
      */
-    function rollback()
+    public function rollback()
     {
         $this->connect();
         return $this->driver->rollback();
@@ -155,7 +155,7 @@ class Connection implements ConnectionInterface
      * @param Query $query
      * @return mixed
      */
-    function compileQuery(Query $query)
+    public function compileQuery(Query $query)
     {
         return $this->driver->compileQuery($query);
     }
@@ -165,7 +165,7 @@ class Connection implements ConnectionInterface
      * @param $statement
      * @return int
      */
-    function execute($statement)
+    public function execute($statement)
     {
         $this->connect();
         return $this->driver->execute($statement);
@@ -176,7 +176,7 @@ class Connection implements ConnectionInterface
      * @param $statement
      * @return mixed
      */
-    function query($statement)
+    public function query($statement)
     {
         $this->connect();
         return $this->driver->query($statement);
@@ -187,7 +187,7 @@ class Connection implements ConnectionInterface
      * @param $statement
      * @return \PDOStatement
      */
-    function prepare($statement)
+    public function prepare($statement)
     {
         $this->connect();
         return $this->driver->prepare($statement);
@@ -198,7 +198,7 @@ class Connection implements ConnectionInterface
      * @param Query $query
      * @return int|\PDOStatement
      */
-    function run(Query $query)
+    public function run(Query $query)
     {
         $statement = $this->compileQuery($query);
         if ($query->getType() != Query::SELECT && $query->getValueBinder()->isEmpty()) {

@@ -57,7 +57,7 @@ class QueryExpression extends CompositeExpression
         return $queryExpression;
     }
 
-    function addMultiple(array $expressions)
+    function addMultiple(array $expressions = [])
     {
         foreach ($expressions as $key => $expression) {
             if (is_callable($expression)) {

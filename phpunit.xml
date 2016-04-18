@@ -4,9 +4,6 @@
          backupGlobals="false"
          colors="true"
          bootstrap="vendor/autoload.php">
-    <php>
-        <ini name="error_reporting" value="1" />
-    </php>
 
     <testsuites>
         <testsuite name="Slince Database Test Suite">
