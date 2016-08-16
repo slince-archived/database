@@ -16,7 +16,9 @@ $connection = $connectionManager->get('default');
 
 $post = $connection->newQuery()->select('title')
     ->from('posts')
-    ->where('id = 1')
+    ->where('id = :id')
+    ->setParameter(':id', 1)
+//    ->toSql();
     ->execute()
     ->fetch();
 print_r($post);

@@ -145,12 +145,6 @@ class Query
         return $this;
     }
 
-    public function addParameters(array $parameters, array $parameterTypes = [])
-    {
-        $this->getValueBinder()->setParameters($parameters, $parameterTypes);
-        return $this;
-    }
-
     /**
      * 批量设置参数
      * @param array $parameters
